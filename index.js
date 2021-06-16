@@ -15,6 +15,13 @@ app.use(express.json());
 // Enable CORS
 app.use(cors());
 
+const SERVER_ERR_MSG = "Unexpected internal server error";
+
+function returnMessage(res, status, message) {
+    res.status(status);
+    res.send(message);
+}
+
 async function main() {
 
     // 1a. Connect to Mongo
@@ -22,12 +29,12 @@ async function main() {
 
     // add routes here
     app.get('/', function(req, res) {
-        res.send("<h1>Hello from Express - Water Gardens</h1>")
+        res.send("<h1>Hello from Express - Water Gardens APIs</h1>")
     })
 
     // ENDPOINT: Add a new plant to the database
     // -----------------------------------------
-    app.post('/water_gardens/plants', async (req, res) => {
+    app.post('/plant/add', async (req, res) => {
         // each plant has name, appearance, care, lighting
         let {name, appearance, care, lighting, likes} = req.body;
 
@@ -47,18 +54,16 @@ async function main() {
                 smartTags,
                 createdOn
             });
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Add a new garden to the database
     // ------------------------------------------
-    app.post('/water_gardens', async (req, res) => {
+    app.post('/garden/add', async (req, res) => {
         // each garden has name, description, completion date, weeks to complete, complexity level
         // each garden has one aquascaper 
         // let aquascaper = {
@@ -86,29 +91,24 @@ async function main() {
                 ratings,
                 createdOn
             });
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Get a specific plant by ID
     // ------------------------------------
-    app.get('/water_gardens/plants/:id', async (req, res) => {
+    app.get('/plant/:id', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection("aquatic_plants").findOne({
                 '_id' : ObjectId(req.params.id)
             });
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
 
@@ -116,25 +116,22 @@ async function main() {
 
     // ENDPOINT: Get a specific garden by ID
     // -------------------------------------
-    app.get('/water_gardens/:id', async (req, res) => {
+    app.get('/garden/:id', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection("gardens").findOne({
                 '_id' : ObjectId(req.params.id)
             });
-        
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Get plants in the database all or based on search criteria
     // --------------------------------------------------------------------
-    app.get('/water_gardens/plants', async (req, res) => {
+    app.get('/plants', async (req, res) => {
         let criteria = {};
 
         // possible search criteria
@@ -151,24 +148,21 @@ async function main() {
             criteria['lighting'] = {$regex: req.query.lighting, $options: "i"}
         }
 
-        console.log("search", criteria);
+        console.log("search all plants", criteria);
 
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection("aquatic_plants").find(criteria).toArray();
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Get all gardens in the database or based on search criteria
     // ---------------------------------------------------------------------
-    app.get('/water_gardens', async (req, res) => {
+    app.get('/gardens', async (req, res) => {
         let criteria = {};
 
         // possible search criteria
@@ -192,19 +186,16 @@ async function main() {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection("gardens").find(criteria).toArray();
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Update an existing plant
     // ----------------------------------
-    app.put('/water_gardens/plants/:id', async (req, res) => {
+    app.put('/plant/:id/edit', async (req, res) => {
         // retrieve the client's data from req.body
         let {name, appearance, care, lighting, likes, smartTags} = req.body;
 
@@ -227,19 +218,16 @@ async function main() {
                     modifiedOn
                 }
             })
-            
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Update an existing garden
     // -----------------------------------
-    app.put('/water_gardens/:id', async (req, res) => {
+    app.put('/garden/:id/edit', async (req, res) => {
         let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, plants, ratings} = req.body;
         
         plants = plants || [];
@@ -272,52 +260,46 @@ async function main() {
                     modifiedOn
                 }
             });
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Delete an existing plant
     // ----------------------------------
-    app.delete('/water_gardens/plants/:id', async (req, res) => {
+    app.delete('/plant/:id', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('aquatic_plants').deleteOne({
                 "_id" : ObjectId(req.params.id)
             })
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Delete an existing garden
     // -----------------------------------
-    app.delete('/water_gardens/:id', async (req, res) => {
+    app.delete('/garden/:id', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('gardens').deleteOne({
                 "_id" : ObjectId(req.params.id)
             })
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings)
     // --------------------------------------
-    app.patch('/water_gardens/plants/:id/tags/add', async (req, res) => {
+    app.patch('/plant/:id/tags/add', async (req, res) => {
         try {
             let newTag = req.body.smartTag;
             let db = MongoUtil.getDB();
@@ -326,19 +308,16 @@ async function main() {
             }, {
                 '$push' : { 'smartTags' : newTag  }
             })
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Removing a smartTag from a plant
     // ------------------------------------------
-    app.patch('/water_gardens/plants/:id/tags/delete', async (req, res) => {
+    app.patch('/plant/:id/tags/delete', async (req, res) => {
         try {
             let tagToDelete = req.body.smartTag;
             console.log("delete tag:", tagToDelete)
@@ -349,19 +328,16 @@ async function main() {
             }, {
                 '$pull' : { 'smartTags' : tagToDelete  }
             })
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Increasing a like count by 1 to a plant
     // -------------------------------------------------
-    app.patch('/water_gardens/plants/:id/likes/add_one', async (req, res) => {
+    app.patch('/plant/:id/likes/add_one', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('aquatic_plants').updateOne({
@@ -369,42 +345,52 @@ async function main() {
             }, {
                 '$inc' : { 'likes' :  1 }
             })
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Adding a plant to a garden
     // ------------------------------------
-    // And duplicates are checked before API call
-    // !!!! HARYATI : FIX THIS !!!!
-    app.patch('/water_gardens/:gid/plant/:pid/add', async (req, res) => {
+    // !!! Haryati this need to test
+    app.patch('/garden/:gid/plant/:pid/add', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let wantedPlant = await db.collection('aquatic_plants').findOne({
                 '_id' : ObjectId(req.params.pid)
             });
 
-            let result = await db.collection('gardens').updateOne({
-                '_id' : ObjectId(req.params.gid)
-            }, {
-                '$push': {
-                    'plants': {
-                        'id' : wantedPlant._id,
-                        'name': wantedPlant.name,
-                        'care': wantedPlant.care
-                    }
+            if (wantedPlant == null){
+                res.send("Plant does not exist in the database.");
+                res.status(404);
+            } else {
+                let duplicatePlant = await db.collection('gardens').findOne({
+                    '_id' : ObjectId(req.params.gid),
+                    'plants.id': ObjectId(req.params.pid)
+                });
+
+                if (duplicatePlant == null) {
+                    let result = await db.collection('gardens').updateOne({
+                        '_id' : ObjectId(req.params.gid)
+                    }, {
+                        '$push': {
+                            'plants': {
+                                'id' : wantedPlant._id,
+                                'name': wantedPlant.name,
+                                'care': wantedPlant.care
+                            }
+                        }
+                    })
+                    returnMessage(res, 200, result);
+                } else {
+                    res.send("Plant already exist in the garden.");
+                    res.status(400);
                 }
-            })
-            res.status(200);
-            res.send(result);
+            }
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
@@ -412,7 +398,7 @@ async function main() {
     // ENDPOINT: Removing a plant from a garden
     // ----------------------------------------
     // !!! Haryati this need to test
-    app.patch('/water_gardens/:gid/plant/:pid/delete', async (req, res) => {
+    app.patch('/garden/:gid/plant/:pid/delete', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('gardens').updateOne({
@@ -422,35 +408,40 @@ async function main() {
                     'plants': { 'id': ObjectId(req.params.pid)}
                 }
             })
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
     // ENDPOINT: Search for multiple smartTags in plants using $in
     // -----------------------------------------------------------
-    // !!! Haryati this need to test
-    app.get('/water_gardens/plants/tags', async (req, res) => {
+    // !!! Haryati this need to check on use of $in
+    app.get('/gardens/plants/tags', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
 
             let result = await db.collection('aquatic_plants').find({
 
             }).toArray();
-
-            res.status(200);
-            res.send(result);
+            returnMessage(res, 200, result);
         } catch (e) {
-            res.send("Unexpected internal server error");
-            res.status(500);
+            returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
         }
     })
 
+    // Design the below using React?
+    
+    // ENDPOINT: Add a rating to a garden
+    // -------------------------------------
+
+    // ENDPOINT: Delete a rating to a garden
+    // -------------------------------------
+
+    // ENDPOINT: Edit a rating to a garden
+    // -------------------------------------
 }
 
 main();
