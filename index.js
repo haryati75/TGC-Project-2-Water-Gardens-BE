@@ -54,7 +54,7 @@ async function main() {
                 smartTags,
                 createdOn
             });
-            returnMessage(res, 200, result);
+            returnMessage(res, 200, result.ops);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
@@ -91,7 +91,7 @@ async function main() {
                 ratings,
                 createdOn
             });
-            returnMessage(res, 200, result);
+            returnMessage(res, 200, result.ops);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG);
             console.log(e);
@@ -148,11 +148,11 @@ async function main() {
             criteria['lighting'] = {$regex: req.query.lighting, $options: "i"}
         }
 
-        console.log("search all plants", criteria);
-
         try {
             let db = MongoUtil.getDB();
-            let result = await db.collection("aquatic_plants").find(criteria).toArray();
+            let result = await db.collection("aquatic_plants").find(criteria).sort({
+                _id : -1
+            }).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG);
@@ -181,11 +181,11 @@ async function main() {
             criteria['aquascaper.name'] = { $regex: req.query.aquascaper, $options: "i" }
         }
 
-        console.log("search", criteria);
-
         try {
             let db = MongoUtil.getDB();
-            let result = await db.collection("gardens").find(criteria).toArray();
+            let result = await db.collection("gardens").find(criteria).sort({
+                _id : -1
+            }).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG);
@@ -239,8 +239,7 @@ async function main() {
         for (let i=0; i < ratings.length; i++) {
             ratings[i]['id'] = new ObjectId();
         }
-        console.log("Updating garden", req.body)
-
+        
         let modifiedOn = new Date();
 
         try {
@@ -270,6 +269,7 @@ async function main() {
     // ENDPOINT: Delete an existing plant
     // ----------------------------------
     app.delete('/plant/:id', async (req, res) => {
+        console.log("Deleting plant", req.params.id)
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('aquatic_plants').deleteOne({
@@ -285,6 +285,7 @@ async function main() {
     // ENDPOINT: Delete an existing garden
     // -----------------------------------
     app.delete('/garden/:id', async (req, res) => {
+        console.log("Deleting plant", req.params.id)
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('gardens').deleteOne({
