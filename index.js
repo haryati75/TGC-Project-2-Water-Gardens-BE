@@ -36,7 +36,7 @@ async function main() {
     // -----------------------------------------
     app.post('/plant/add', async (req, res) => {
         // each plant has name, appearance, care, lighting
-        let {name, appearance, care, lighting, likes} = req.body;
+        let {name, appearance, care, lighting, likes, photoURL} = req.body;
 
         // default plant info
         likes = likes || 0;
@@ -52,6 +52,7 @@ async function main() {
                 lighting,
                 likes, 
                 smartTags,
+                photoURL,
                 createdOn
             });
             returnMessage(res, 200, result.ops);
@@ -70,13 +71,12 @@ async function main() {
         //     name: req.body.aquascaper.name,
         //     email: req.body.aquascaper.email
         // }
-        let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper} = req.body;
+        let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, photoURL} = req.body;
 
         // default garden info
         let plants = [];  
         let ratings = [];
         let createdOn = new Date();
-        console.log("add garden", aquascaper)
 
         try {
             let db = MongoUtil.getDB();
@@ -89,6 +89,7 @@ async function main() {
                 aquascaper,
                 plants,
                 ratings,
+                photoURL,
                 createdOn
             });
             returnMessage(res, 200, result.ops);
@@ -197,7 +198,7 @@ async function main() {
     // ----------------------------------
     app.put('/plant/:id/edit', async (req, res) => {
         // retrieve the client's data from req.body
-        let {name, appearance, care, lighting, likes, smartTags} = req.body;
+        let {name, appearance, care, lighting, likes, smartTags, photoURL} = req.body;
 
         smartTags = smartTags || []; // if null, set as empty list
         smartTags = Array.isArray(smartTags) ? smartTags : [smartTags]; // if 1 element, make it into array
@@ -215,6 +216,7 @@ async function main() {
                     lighting,
                     likes,
                     smartTags,
+                    photoURL,
                     modifiedOn
                 }
             })
@@ -228,7 +230,7 @@ async function main() {
     // ENDPOINT: Update an existing garden
     // -----------------------------------
     app.put('/garden/:id/edit', async (req, res) => {
-        let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, plants, ratings} = req.body;
+        let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, plants, ratings, photoURL} = req.body;
         
         plants = plants || [];
         plants = Array.isArray(plants) ? plants : [plants];
@@ -256,6 +258,7 @@ async function main() {
                     aquascaper,
                     plants,
                     ratings,
+                    photoURL,
                     modifiedOn
                 }
             });
@@ -380,6 +383,7 @@ async function main() {
                             'plants': {
                                 'id' : wantedPlant._id,
                                 'name': wantedPlant.name,
+                                'photoURL' : wantedPlant.photoURL,
                                 'care': wantedPlant.care
                             }
                         }
