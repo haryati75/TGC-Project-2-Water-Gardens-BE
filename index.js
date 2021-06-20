@@ -32,7 +32,7 @@ async function main() {
         res.send("<h1>Hello from Express - Water Gardens APIs</h1>")
     })
 
-    // ENDPOINT: Add a new plant to the database
+    // ENDPOINT: Add a new plant to the database - (done)
     // -----------------------------------------
     app.post('/plant/add', async (req, res) => {
         // each plant has name, appearance, care, lighting
@@ -62,7 +62,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Add a new garden to the database
+    // ENDPOINT: Add a new garden to the database (done)
     // ------------------------------------------
     app.post('/garden/add', async (req, res) => {
         // each garden has name, description, completion date, weeks to complete, complexity level
@@ -99,7 +99,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get a specific plant by ID
+    // ENDPOINT: Get a specific plant by ID (done)
     // ------------------------------------
     app.get('/plant/:id', async (req, res) => {
         try {
@@ -115,7 +115,7 @@ async function main() {
 
     })
 
-    // ENDPOINT: Get a specific garden by ID
+    // ENDPOINT: Get a specific garden by ID (done)
     // -------------------------------------
     app.get('/garden/:id', async (req, res) => {
         try {
@@ -130,7 +130,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get plants in the database all or based on search criteria
+    // ENDPOINT: Get plants in the database all or based on search criteria (not done for criteria)
     // --------------------------------------------------------------------
     app.get('/plants', async (req, res) => {
         let criteria = {};
@@ -161,7 +161,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get all gardens in the database or based on search criteria
+    // ENDPOINT: Get all gardens in the database or based on search criteria (not done for criteria)
     // ---------------------------------------------------------------------
     app.get('/gardens', async (req, res) => {
         let criteria = {};
@@ -194,7 +194,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Update an existing plant
+    // ENDPOINT: Update an existing plant (done)
     // ----------------------------------
     app.put('/plant/:id/edit', async (req, res) => {
         // retrieve the client's data from req.body
@@ -227,7 +227,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Update an existing garden
+    // ENDPOINT: Update an existing garden (done)
     // -----------------------------------
     app.put('/garden/:id/edit', async (req, res) => {
         let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, plants, ratings, photoURL} = req.body;
@@ -269,7 +269,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Delete an existing plant
+    // ENDPOINT: Delete an existing plant (done)
     // ----------------------------------
     app.delete('/plant/:id', async (req, res) => {
         console.log("Deleting plant", req.params.id)
@@ -285,7 +285,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Delete an existing garden
+    // ENDPOINT: Delete an existing garden (done)
     // -----------------------------------
     app.delete('/garden/:id', async (req, res) => {
         console.log("Deleting plant", req.params.id)
@@ -301,7 +301,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings)
+    // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings) (NOT IN USE)
     // --------------------------------------
     app.patch('/plant/:id/tags/add', async (req, res) => {
         try {
@@ -319,7 +319,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Removing a smartTag from a plant
+    // ENDPOINT: Removing a smartTag from a plant (NOT IN USE)
     // ------------------------------------------
     app.patch('/plant/:id/tags/delete', async (req, res) => {
         try {
@@ -339,7 +339,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Increasing a like count by 1 to a plant
+    // ENDPOINT: Increasing a like count by 1 to a plant (done)
     // -------------------------------------------------
     app.patch('/plant/:id/likes/add_one', async (req, res) => {
         try {
@@ -356,9 +356,8 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Adding a plant to a garden
+    // ENDPOINT: Adding a plant to a garden (NOT IN USE - convert this to ratings)
     // ------------------------------------
-    // !!! Haryati this need to test
     app.patch('/garden/:gid/plant/:pid/add', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
@@ -400,9 +399,8 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Removing a plant from a garden
+    // ENDPOINT: Removing a plant from a garden (Not in USE)
     // ----------------------------------------
-    // !!! Haryati this need to test
     app.patch('/garden/:gid/plant/:pid/delete', async (req, res) => {
         try {
             let db = MongoUtil.getDB();
@@ -420,16 +418,41 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Search for multiple smartTags in plants using $in
-    // -----------------------------------------------------------
-    // !!! Haryati this need to check on use of $in
-    app.get('/gardens/plants/tags', async (req, res) => {
+    // ---------------------------------------------------------------------
+    // ENDPOINT: Get Top N Plants by Care/Lighting with greater than M likes
+    // ---------------------------------------------------------------------
+    app.get('/plants/top', async (req, res) => {
+        let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
+        let floorLikes = !req.query.likes ? 5 : parseInt(req.query.likes); // default to greater than/equal 5 likes
+        
+        // Criteria has similar effect with $and
+        let criteria = { 'likes' : { '$gte' : floorLikes } };
+
+        if (req.query.care) {
+            criteria['care'] = req.query.care
+        }
+
+        // use regex: lighting has comibination of low, moderate-low, moderate-high
+        if (req.query.lighting) {
+            criteria['lighting'] = {$regex: req.query.lighting, $options:"i"}
+        }
+
+        console.log("top N Plants criteria by likes: ", criteria)
+
         try {
             let db = MongoUtil.getDB();
+            let result = await 
+            db.collection("aquatic_plants").find(criteria).project({
+                    '_id' : 1,
+                    'name' : 1,
+                    'photoURL' : 1,
+                    'likes' : 1,
+                    'care' : 1,
+                    'lighting' : 1
+                }).sort({
+                    'likes' : -1
+                }).limit(topN).toArray();
 
-            let result = await db.collection('aquatic_plants').find({
-
-            }).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG);
@@ -437,8 +460,52 @@ async function main() {
         }
     })
 
-    // Design the below using React?
-    
+    // --------------------------------------------------------------------------------------
+    // ENDPOINT: Get Top N Gardens by Complexity/Aquascaper with greater than M ratings level
+    // --------------------------------------------------------------------------------------
+    app.get('/gardens/top', async (req, res) => {
+        let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
+        let criteria = {}
+        
+        // rating level is nested in ratings objects array
+        let floorRating = !req.query.rating ? 3 : parseInt(req.query.rating); // default to greater than/equal 3 ratings
+        criteria = { 
+            'ratings' : { 
+                '$elemMatch' :  {
+                    'level' : {'$gte' : floorRating } } } };
+
+        if (req.query.level) {
+            criteria['complexityLevel'] = req.query.level
+        }
+
+        // use regex: nested aquascaper name with partial search string allowed
+        if (req.query.aquascaper) {
+            criteria['aquascaper.name'] = {$regex: req.query.aquascaper, $options:"i"}
+        }
+
+        console.log("top N Gardens criteria by ratings: ", criteria)
+
+        try {
+            let db = MongoUtil.getDB();
+            let result = await 
+                db.collection("gardens").find(criteria).project({
+                        '_id' : 1,
+                        'name' : 1,
+                        'photoURL' : 1,
+                        'complexityLevel' : 1,
+                        'aquascaper.name' : 1,
+                        'ratings.$' : 1
+                    }).sort({
+                        '_id' : -1
+                    }).limit(topN).toArray();
+
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
     // ENDPOINT: Add a rating to a garden
     // -------------------------------------
 
