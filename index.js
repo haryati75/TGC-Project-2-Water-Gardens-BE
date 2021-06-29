@@ -130,7 +130,84 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get plants in the database all or based on search criteria (not done for criteria)
+    // ENDPOINT: Get all unique aquascapers names in the gardens
+    // ---------------------------------------------------------
+    app.get('/aquascapers/names', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").distinct("aquascaper.name");
+
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
+    // ENDPOINT: Get average, minimum, maximum ratings per garden
+    // ---------------------------------------------------------
+    app.get('/gardens/ratings', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    { $unwind : "$ratings" },
+                    { $group: {
+                        _id:"$_id", 
+                        count: { $sum: 1 }, 
+                        ave: { $avg: "$ratings.level" },
+                        min: { $min: "$ratings.level" },
+                        max: { $max: "$ratings.level" }
+                    }}
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
+
+    // ENDPOINT: Get number of gardens by aquascapers
+    // ----------------------------------------------
+    app.get('/aquascapers/count', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    {
+                        $group:{_id:"$aquascaper.name", gardenTotal: {$sum:1} }
+                    }
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
+    // ENDPOINT: Get number of gardens by complexity level
+    // ---------------------------------------------------
+    app.get('/gardens/count', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    {
+                        $group:{_id:"$complexityLevel", Total:{$sum:1}}
+                    }
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
+    // ENDPOINT: Get plants in the database all or based on search criteria (done)
     // --------------------------------------------------------------------
     app.get('/plants', async (req, res) => {
         let criteria = {};
@@ -161,7 +238,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get all gardens in the database or based on search criteria (not done for criteria)
+    // ENDPOINT: Get all gardens in the database or based on search criteria (done)
     // ---------------------------------------------------------------------
     app.get('/gardens', async (req, res) => {
         let criteria = {};
@@ -323,13 +400,17 @@ async function main() {
     // ---------------------------------------------------------------------
     app.get('/plants/top', async (req, res) => {
         let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
-        let floorLikes = !req.query.likes ? 5 : parseInt(req.query.likes); // default to greater than/equal 5 likes
+        let floorLikes = !req.query.likes ? 0 : parseInt(req.query.likes); // default to greater than/equal 5 likes
         
         // Criteria has similar effect with $and
-        let criteria = { 'likes' : { '$gte' : floorLikes } };
 
+        // negative likes means take ratings below the value
+        let criteria = { 'likes' : floorLikes >= 0 ? { '$gte' : floorLikes } : { '$lt' : (-floorLikes) }};
+
+        let care = req.query.care || [];
+        care = Array.isArray(care) ? care : [care];
         if (req.query.care) {
-            criteria['care'] = req.query.care
+            criteria['care'] = { '$in' : care }
         }
 
         // use regex: lighting has comibination of low, moderate-low, moderate-high
@@ -341,15 +422,15 @@ async function main() {
             let db = MongoUtil.getDB();
             let result = await 
             db.collection("aquatic_plants").find(criteria).project({
-                    '_id' : 1,
-                    'name' : 1,
-                    'photoURL' : 1,
-                    'likes' : 1,
-                    'care' : 1,
-                    'lighting' : 1
-                }).sort({
-                    'likes' : -1
-                }).limit(topN).toArray();
+                '_id' : 1,
+                'name' : 1,
+                'photoURL' : 1,
+                'likes' : 1,
+                'care' : 1,
+                'lighting' : 1
+            }).sort({
+                'likes' : -1
+            }).limit(topN).toArray();
 
             returnMessage(res, 200, result);
         } catch (e) {
@@ -362,15 +443,13 @@ async function main() {
     // ENDPOINT: Get Top N Gardens by Complexity/Aquascaper with greater than M ratings level
     // --------------------------------------------------------------------------------------
     app.get('/gardens/top', async (req, res) => {
-        let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
+        let topN = !req.query.n ? 3 : parseInt(req.query.n) ; 
         let criteria = {}
         
         // rating level is nested in ratings objects array
-        let floorRating = !req.query.rating ? 3 : parseInt(req.query.rating); // default to greater than/equal 3 ratings
-        criteria = { 
-            'ratings' : { 
-                '$elemMatch' :  {
-                    'level' : { '$gte' : floorRating } } } };
+        let floorRating = !req.query.rating ? 0 : parseInt(req.query.rating); 
+        
+        criteria['ratings.level'] =  floorRating >= 0 ? { '$gte' : floorRating } : { '$nin' : [3,4,5] } ;
 
         if (req.query.level) {
             criteria['complexityLevel'] = req.query.level
@@ -381,21 +460,55 @@ async function main() {
             criteria['aquascaper.name'] = {$regex: req.query.aquascaper, $options:"i"}
         }
 
-        console.log(criteria);
-
         try {
             let db = MongoUtil.getDB();
             let result = await 
                 db.collection("gardens").find(criteria).project({
-                        '_id' : 1,
-                        'name' : 1,
-                        'photoURL' : 1,
-                        'complexityLevel' : 1,
-                        'aquascaper.name' : 1,
-                        'ratings.$' : 1
-                    }).sort({
-                        '_id' : -1
-                    }).limit(topN).toArray();
+                    '_id' : 1,
+                    'name' : 1,
+                    'photoURL' : 1,
+                    'complexityLevel' : 1,
+                    'aquascaper.name' : 1,
+                    'ratings' : 1
+                }).sort({
+                    '_id' : -1
+                }).limit(topN).toArray();
+
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG);
+            console.log(e);
+        }
+    })
+
+    // --------------------------------------------------------------------------------------
+    // ENDPOINT: Find Top Aquascapers (semi-profession and above garden complexity)  
+    //  and show gardens with at least a rating that is above 3
+    //  and easy plants in the gardens are NOT found
+    //  and returns the first matched rating with comments
+    // --------------------------------------------------------------------------------------
+    app.get('/aquascapers/top', async (req, res) => {
+        let topN = !req.query.n ? 3 : parseInt(req.query.n) ; 
+        try {
+            let db = MongoUtil.getDB();
+            let result = await 
+                db.collection("gardens").find({
+                    'complexityLevel' : {
+                        '$in': ["intermediate", "semi-professional", "professional"]
+                    },
+                    'ratings.level' : { '$in' : [4, 5] },
+                    'plants.care' : { '$nin' : ["easy"] }
+                }).project({
+                    '_id' : 1,
+                    'name' : 1,
+                    'photoURL' : 1,
+                    'complexityLevel' : 1,
+                    'aquascaper.name' : 1,
+                    'plants' : 1,
+                    'ratings.$' : 1
+                }).sort({
+                    '_id' : -1
+                }).limit(topN).toArray();
 
             returnMessage(res, 200, result);
         } catch (e) {
