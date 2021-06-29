@@ -4,6 +4,9 @@ const cors = require("cors");
 require('dotenv').config();
 const ObjectId = require("mongodb").ObjectId;
 const MongoUtil = require('./MongoUtil');
+const returnMessage = require('./wgUtil').returnMessage;
+const SERVER_ERR_MSG = require('./wgUtil').SERVER_ERR_MSG;
+const makeArray = require('./wgUtil').makeArray;
 const mongoURL = process.env.MONGO_URI;
 
 // Setup express
@@ -14,13 +17,6 @@ app.use(express.json());
 
 // Enable CORS
 app.use(cors());
-
-const SERVER_ERR_MSG = "Unexpected internal server error";
-
-function returnMessage(res, status, message) {
-    res.status(status);
-    res.send(message);
-}
 
 async function main() {
 
@@ -57,8 +53,7 @@ async function main() {
             });
             returnMessage(res, 200, result.ops);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -94,8 +89,7 @@ async function main() {
             });
             returnMessage(res, 200, result.ops);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -109,10 +103,8 @@ async function main() {
             });
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
-
     })
 
     // ENDPOINT: Get a specific garden by ID (done)
@@ -125,8 +117,7 @@ async function main() {
             });
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -139,8 +130,7 @@ async function main() {
 
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -163,11 +153,9 @@ async function main() {
             ).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
-
 
     // ENDPOINT: Get number of gardens by aquascapers
     // ----------------------------------------------
@@ -183,8 +171,7 @@ async function main() {
             ).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -202,8 +189,7 @@ async function main() {
             ).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -233,8 +219,7 @@ async function main() {
             }).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -266,8 +251,7 @@ async function main() {
             }).toArray();
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -277,8 +261,7 @@ async function main() {
         // retrieve the client's data from req.body
         let {name, appearance, care, lighting, likes, smartTags, photoURL} = req.body;
 
-        smartTags = smartTags || []; // if null, set as empty list
-        smartTags = Array.isArray(smartTags) ? smartTags : [smartTags]; // if 1 element, make it into array
+        smartTags = makeArray(smartTags);
         let modifiedOn = new Date();
 
         try {
@@ -299,8 +282,7 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -309,17 +291,14 @@ async function main() {
     app.put('/garden/:id/edit', async (req, res) => {
         let {name, desc, completionDate, weeksToComplete, complexityLevel, aquascaper, plants, ratings, photoURL} = req.body;
         
-        plants = plants || [];
-        plants = Array.isArray(plants) ? plants : [plants];
-        ratings = ratings || [];
-        ratings = Array.isArray(ratings) ? ratings : [ratings];
+        let modifiedOn = new Date();
+        plants = makeArray(plants);
+        ratings = makeArray(ratings);
 
         // create ids for each rating sub-documents
         for (let i=0; i < ratings.length; i++) {
             ratings[i]['id'] = new ObjectId();
         }
-        
-        let modifiedOn = new Date();
 
         try {
             let db = MongoUtil.getDB();
@@ -341,15 +320,13 @@ async function main() {
             });
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
     // ENDPOINT: Delete an existing plant (done)
     // ----------------------------------
     app.delete('/plant/:id', async (req, res) => {
-        console.log("Deleting plant", req.params.id)
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('aquatic_plants').deleteOne({
@@ -357,15 +334,13 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
     // ENDPOINT: Delete an existing garden (done)
     // -----------------------------------
     app.delete('/garden/:id', async (req, res) => {
-        console.log("Deleting plant", req.params.id)
         try {
             let db = MongoUtil.getDB();
             let result = await db.collection('gardens').deleteOne({
@@ -373,8 +348,7 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -390,13 +364,12 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
     // ---------------------------------------------------------------------
-    // ENDPOINT: Get Top N Plants by Care/Lighting with greater than M likes
+    // ENDPOINT: Get Top N Plants by Care/Lighting with greater than M likes (done)
     // ---------------------------------------------------------------------
     app.get('/plants/top', async (req, res) => {
         let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
@@ -407,8 +380,7 @@ async function main() {
         // negative likes means take ratings below the value
         let criteria = { 'likes' : floorLikes >= 0 ? { '$gte' : floorLikes } : { '$lt' : (-floorLikes) }};
 
-        let care = req.query.care || [];
-        care = Array.isArray(care) ? care : [care];
+        let care = makeArray(req.query.care);
         if (req.query.care) {
             criteria['care'] = { '$in' : care }
         }
@@ -434,8 +406,7 @@ async function main() {
 
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -476,8 +447,7 @@ async function main() {
 
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -512,8 +482,7 @@ async function main() {
 
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -545,8 +514,7 @@ async function main() {
             returnMessage(res, 200, result);
 
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -568,14 +536,12 @@ async function main() {
 
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
 
     // ******************************************************************************************
-
     // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings) (NOT IN USE)
     // --------------------------------------
     app.patch('/plant/:id/tags/add', async (req, res) => {
@@ -589,8 +555,7 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -609,15 +574,12 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
     // ******************************************************************************************
-
-    // ******************************************************************************************
-    // ENDPOINT: Adding a plant to a garden (NOT IN USE - convert this to ratings)
+    // ENDPOINT: Adding a plant to a garden (NOT IN USE)
     // ------------------------------------
     app.patch('/garden/:gid/plant/:pid/add', async (req, res) => {
         try {
@@ -655,8 +617,7 @@ async function main() {
                 }
             }
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
@@ -674,8 +635,7 @@ async function main() {
             })
             returnMessage(res, 200, result);
         } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG);
-            console.log(e);
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
     // ******************************************************************************************
@@ -686,5 +646,5 @@ main();
 
 // START SERVER
 app.listen(3000, ()=> {
-    console.log("Server started... haryati")
+    console.log("Server started...")
 })

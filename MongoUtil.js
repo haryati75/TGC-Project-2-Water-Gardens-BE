@@ -8,7 +8,7 @@ async function connect(url, dbname) {
         useUnifiedTopology : true
     })
     _db = client.db(dbname);
-    console.log("Database connected...haryati");
+    console.log("Database connected...");
 }
 
 function getDB() {
