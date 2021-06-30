@@ -193,12 +193,25 @@ async function main() {
         }
     })
 
+        // ENDPOINT: Get number of gardens by complexity level
+    // ---------------------------------------------------
+    app.get('/plants/smarttags', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("aquatic_plants").distinct("smartTags");
+
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
     // ENDPOINT: Get plants in the database all or based on search criteria (done)
     // --------------------------------------------------------------------
     app.get('/plants', async (req, res) => {
         let criteria = {};
 
-        // possible search criteria
+        // possible search criteria field by field (effect is same as $and)
         if (req.query.name) {
             criteria['name'] = {$regex: req.query.name, $options: "i"}
         }
@@ -210,6 +223,20 @@ async function main() {
         }
         if (req.query.lighting) {
             criteria['lighting'] = {$regex: req.query.lighting, $options: "i"}
+        }
+        if (req.query.smarttag) {
+            criteria['smartTags'] = {$regex: req.query.smarttag, $options: "i"}
+        }
+
+        // search all fields 
+        if (req.query.search) {
+            criteria['$or'] = [
+                { 'name': {$regex: req.query.search, $options: "i"} },
+                { 'appearance': {$regex: req.query.search, $options: "i"} }, 
+                { 'care': {$regex: req.query.search, $options: "i"} },
+                { 'lighting': {$regex: req.query.search, $options: "i"} },
+                { 'smartTags': {$regex: req.query.search, $options: "i"} }
+            ]
         }
 
         try {
@@ -242,6 +269,19 @@ async function main() {
         // Search for nested element of a Document (not an array)
         if (req.query.aquascaper) {
             criteria['aquascaper.name'] = { $regex: req.query.aquascaper, $options: "i" }
+        }
+
+        // search all fields
+        if (req.query.search) {
+            criteria['$or'] = [
+                { 'name': {$regex: req.query.search, $options: "i"} },
+                { 'desc': {$regex: req.query.search, $options: "i"} }, 
+                { 'complexityLevel': {$regex: req.query.search, $options: "i"} },
+                { 'aquascaper.name': {$regex: req.query.search, $options: "i"} },
+                { 'aquascaper.email': {$regex: req.query.search, $options: "i"} },
+                { 'plants.name' : {$regex: req.query.search, $options: "i"} },
+                { 'ratings.comment' : {$regex: req.query.search, $options: "i"} }  
+            ]
         }
 
         try {
