@@ -580,6 +580,29 @@ async function main() {
         }
     })
 
+    // ENDPOINT: Update a Garden Rating Level and Comment
+    // -------------------------------------------------
+    app.put('/garden/:gid/rating/:rid/edit', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection('gardens').updateOne({
+                'ratings' : {
+                    '$elemMatch' : {
+                        'id' : ObjectId(req.params.rid)
+                    }
+                }
+            }, {
+                '$set' : {
+                    'ratings.$.level' : req.body.level,
+                    'ratings.$.comment' : req.body.comment
+                }
+            })
+
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
 
     // ******************************************************************************************
     // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings) (NOT IN USE)
@@ -685,6 +708,7 @@ async function main() {
 main();
 
 // START SERVER
-app.listen(process.env.PORT, ()=> {
+// app.listen(process.env.PORT, ()=> {
+app.listen(3000, ()=> {
     console.log("Server started...")
 })
