@@ -121,91 +121,6 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Get all unique aquascapers names in the gardens
-    // ---------------------------------------------------------
-    app.get('/aquascapers/names', async (req, res) => {
-        try {
-            let db = MongoUtil.getDB();
-            let result = await db.collection("gardens").distinct("aquascaper.name");
-
-            returnMessage(res, 200, result);
-        } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
-        }
-    })
-
-    // ENDPOINT: Get average, minimum, maximum ratings per garden
-    // ---------------------------------------------------------
-    app.get('/gardens/ratings', async (req, res) => {
-        try {
-            let db = MongoUtil.getDB();
-            let result = await db.collection("gardens").aggregate(
-                [
-                    { $unwind : "$ratings" },
-                    { $group: {
-                        _id:"$_id", 
-                        count: { $sum: 1 }, 
-                        ave: { $avg: "$ratings.level" },
-                        min: { $min: "$ratings.level" },
-                        max: { $max: "$ratings.level" }
-                    }}
-                ]
-            ).toArray();
-            returnMessage(res, 200, result);
-        } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
-        }
-    })
-
-    // ENDPOINT: Get number of gardens by aquascapers
-    // ----------------------------------------------
-    app.get('/aquascapers/count', async (req, res) => {
-        try {
-            let db = MongoUtil.getDB();
-            let result = await db.collection("gardens").aggregate(
-                [
-                    {
-                        $group:{_id:"$aquascaper.name", gardenTotal: {$sum:1} }
-                    }
-                ]
-            ).toArray();
-            returnMessage(res, 200, result);
-        } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
-        }
-    })
-
-    // ENDPOINT: Get number of gardens by complexity level
-    // ---------------------------------------------------
-    app.get('/gardens/count', async (req, res) => {
-        try {
-            let db = MongoUtil.getDB();
-            let result = await db.collection("gardens").aggregate(
-                [
-                    {
-                        $group:{_id:"$complexityLevel", Total:{$sum:1}}
-                    }
-                ]
-            ).toArray();
-            returnMessage(res, 200, result);
-        } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
-        }
-    })
-
-        // ENDPOINT: Get number of gardens by complexity level
-    // ---------------------------------------------------
-    app.get('/plants/smarttags', async (req, res) => {
-        try {
-            let db = MongoUtil.getDB();
-            let result = await db.collection("aquatic_plants").distinct("smartTags");
-
-            returnMessage(res, 200, result);
-        } catch (e) {
-            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
-        }
-    })
-
     // ENDPOINT: Get plants in the database all or based on search criteria (done)
     // --------------------------------------------------------------------
     app.get('/plants', async (req, res) => {
@@ -416,7 +331,6 @@ async function main() {
         let floorLikes = !req.query.likes ? 0 : parseInt(req.query.likes); // default to greater than/equal 5 likes
         
         // Criteria has similar effect with $and
-
         // negative likes means take ratings below the value
         let criteria = { 'likes' : floorLikes >= 0 ? { '$gte' : floorLikes } : { '$lt' : (-floorLikes) }};
 
@@ -604,37 +518,86 @@ async function main() {
         }
     })
 
-    // ******************************************************************************************
-    // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings) (NOT IN USE)
-    // --------------------------------------
-    app.patch('/plant/:id/tags/add', async (req, res) => {
+    
+    // ENDPOINT: Get all unique aquascapers names in the gardens
+    // ---------------------------------------------------------
+    app.get('/aquascapers/names', async (req, res) => {
         try {
-            let newTag = req.body.smartTag;
             let db = MongoUtil.getDB();
-            let result = await db.collection('aquatic_plants').updateOne({
-                "_id" : ObjectId(req.params.id)
-            }, {
-                '$push' : { 'smartTags' : newTag  }
-            })
+            let result = await db.collection("gardens").distinct("aquascaper.name");
+
             returnMessage(res, 200, result);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
 
-    // ENDPOINT: Removing a smartTag from a plant (NOT IN USE)
+    // ENDPOINT: Get average, minimum, maximum ratings per garden
+    // ---------------------------------------------------------
+    app.get('/gardens/ratings', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    { $unwind : "$ratings" },
+                    { $group: {
+                        _id:"$_id", 
+                        count: { $sum: 1 }, 
+                        ave: { $avg: "$ratings.level" },
+                        min: { $min: "$ratings.level" },
+                        max: { $max: "$ratings.level" }
+                    }}
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
+    // ENDPOINT: Get number of gardens by aquascapers
+    // ----------------------------------------------
+    app.get('/aquascapers/count', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    {
+                        $group:{_id:"$aquascaper.name", gardenTotal: {$sum:1} }
+                    }
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
+    // ENDPOINT: Get number of gardens by complexity level
+    // ---------------------------------------------------
+    app.get('/gardens/count', async (req, res) => {
+        try {
+            let db = MongoUtil.getDB();
+            let result = await db.collection("gardens").aggregate(
+                [
+                    {
+                        $group:{_id:"$complexityLevel", Total:{$sum:1}}
+                    }
+                ]
+            ).toArray();
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
+    // ENDPOINT: All unique smart tags in Plants
     // ------------------------------------------
-    app.patch('/plant/:id/tags/delete', async (req, res) => {
+    app.get('/plants/smarttags', async (req, res) => {
         try {
-            let tagToDelete = req.body.smartTag;
-            console.log("delete tag:", tagToDelete)
-
             let db = MongoUtil.getDB();
-            let result = await db.collection('aquatic_plants').updateOne({
-                '_id' : ObjectId(req.params.id)
-            }, {
-                '$pull' : { 'smartTags' : tagToDelete  }
-            })
+            let result = await db.collection("aquatic_plants").distinct("smartTags");
+
             returnMessage(res, 200, result);
         } catch (e) {
             returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
@@ -642,7 +605,9 @@ async function main() {
     })
 
     // ******************************************************************************************
-    // ENDPOINT: Adding a plant to a garden (NOT IN USE)
+    // TESTED OK BUT NOT IN USE BY FRONT-END for Project 2
+    // ******************************************************************************************
+    // ENDPOINT: Adding a plant to a garden
     // ------------------------------------
     app.patch('/garden/:gid/plant/:pid/add', async (req, res) => {
         try {
@@ -684,7 +649,7 @@ async function main() {
         }
     })
 
-    // ENDPOINT: Removing a plant from a garden (Not in USE)
+    // ENDPOINT: Removing a plant from a garden
     // ----------------------------------------
     app.patch('/garden/:gid/plant/:pid/delete', async (req, res) => {
         try {
@@ -701,6 +666,42 @@ async function main() {
             returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
         }
     })
+
+    // ENDPOINT: Removing a smartTag from a plant 
+    // ------------------------------------------
+    app.patch('/plant/:id/tags/delete', async (req, res) => {
+        try {
+            let tagToDelete = req.body.smartTag;
+
+            let db = MongoUtil.getDB();
+            let result = await db.collection('aquatic_plants').updateOne({
+                '_id' : ObjectId(req.params.id)
+            }, {
+                '$pull' : { 'smartTags' : tagToDelete  }
+            })
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
+    // ENDPOINT: Adding a smartTag to a plant (smartTags in an arrray of strings) 
+    // --------------------------------------
+    app.patch('/plant/:id/tags/add', async (req, res) => {
+        try {
+            let newTag = req.body.smartTag;
+            let db = MongoUtil.getDB();
+            let result = await db.collection('aquatic_plants').updateOne({
+                "_id" : ObjectId(req.params.id)
+            }, {
+                '$push' : { 'smartTags' : newTag  }
+            })
+            returnMessage(res, 200, result);
+        } catch (e) {
+            returnMessage(res, 500, SERVER_ERR_MSG + ">>" + e);
+        }
+    })
+
     // ******************************************************************************************
 
 }
@@ -708,7 +709,6 @@ async function main() {
 main();
 
 // START SERVER
-// app.listen(process.env.PORT, ()=> {
-app.listen(3000, ()=> {
+app.listen(process.env.PORT, ()=> {
     console.log("Server started...")
 })
