@@ -1,25 +1,17 @@
-# Water Gardens API Documentation
+# Water Gardens Gallery - API Documentation
 
 This is a backend server for the Water Gardens project. This is a demo project for educational purposes under the Trent Global College (Singapore).
+
+Base URL for API: https://hh-tgc12p2-watergardens-be.herokuapp.com
+
 
 ## Objectives: 
 To build the backend RESTFUL API services that connects to the Mongo database of the Water Gardens Gallery.
 
-## Business Use Cases
-### 1. A platform for hobbyists to feature their aquascaping aquariums
-The Water Gardens Gallery features aquascaping aquariums and a repository of aquatic plants that are usually used for aquascaping. Hobbyists can submit their aquariums and the plants they used. 
+More details on the Water Gardens Gallery project can be found in the Front-End React repository.
+https://github.com/haryati75/TGC-Project2-WaterGardensFE
 
-### 2. Open platform for reviews and ratings
-Other hobbyists or public can give ratings and feedback on these aquariums. 
-
-### 3. Suppliers of Aquascaping plants, equipments and materials
-A potential platform to sell related aquascaping products and services. Suppliers of aquatic plants can share information of the plants and see potential demands.  
-
-### 4. Marketplace Potential
-With payment and authentication as enhancements, the platform can be used by hobbyists and enthusiasts to engage services (e.g. commissioning of an aquarium by a professional aquascaper) and to buy/sell related aquascaping products.
-
-
-## Main Technologies Used
+## Main Technologies Used for Backend 
 ### 1. Database
 ### **Mongo DB on Atlas:**
 * One-to-One (Garden-Aquascaper)
@@ -55,7 +47,6 @@ Backend Server to be on **HEROKU**
 
 https://github.com/haryati75/TGC-Project-2-Water-Gardens-BE
 
-
 ## Database ERD: water_gardens
 The MongoDB database is called *water_gardens* made up of 2 collections:
 * *gardens.garden*
@@ -74,44 +65,186 @@ The ERD diagram is as follows:
 ## RESTful APIs
 The API calls for the backend service of Water Gardens Gallery are as follows: 
 
-### Get all gardens or plants
+### 1. Get all gardens or plants
 ```
 GET /gardens
 GET /plants
 ```
 
-### Get a specific garden or plant
+### 2. Get a specific garden or plant
 ```
 GET /garden/:id
 GET /plant/:id
 ```
 :id is garden._id / plant._id
 
-### Insert a new garden or plant
+### 3. Insert a new garden or plant
 ```
 POST /garden/add
 POST /plant/add
 ```
-Parameters are passed using req.body (JSON): 
+Parameters are passed using req.body (JSON format) for */garden/add*: 
 
 ```
 {
-
+    name,
+    desc,
+    completionDate,
+    weeksToComplete,
+    complexityLevel,
+    aquascaper.name,
+    aquascaper.email,
+    photoURL
 }
 ```
+Parameters are passed using req.body (JSON) for */plant/add*: 
 
-### Delete an existing garden or plant
+```
+{
+    name,
+    appearance,
+    care,
+    lighting,
+    likes, 
+    photoURL
+}
+```
+### 4. Delete an existing garden or plant
 ```
 DELETE /garden/:id/delete
 DELETE /plant/:id/delete
 ```
-### Update an existing garden or plant
+### 5. Update an existing garden or plant
 ```
 PUT /garden/:id/edit
 PUT /plant/:id/edit
 ```
+Parameters are passed using req.body (JSON format) for */garden/:id/edit*: 
 
+```
+{
+    name,
+    desc,
+    completionDate,
+    weeksToComplete,
+    complexityLevel,
+    aquascaper.name,
+    aquascaper.email,
+    plants.id,
+    plants.name,
+    plants.care,
+    plants.photoURL,
+    ratings.level,
+    ratings.comment,
+    photoURL
+}
+```
+Parameters are passed using req.body (JSON) for */plant/:id/edit*: 
+
+```
+{
+    name,
+    appearance,
+    care,
+    lighting,
+    likes, 
+    smartTags
+    photoURL
+}
+```
+### 6. Increase Plant Likes by 1
+```
+PATCH /plant/:id/likes/add_one
+```
+### 7. Filter Gardens and sort by Garden ID in descending order
+```
+GET /gardens/top
+
+?n=<number of gardens to limit>
+&rating=<+/-ratings.level>
+&level=<complexityLevel>
+&aquascaper=<aquascaper.name>
+```
+
+### 8. Filter Plants and sort by Plant ID in descending order
+```
+GET /plants/top
+
+?n=<number of plants to limit>
+&likes=<+/-likes>
+&care=<care>
+&lighting=<lighting>
+```
+
+### 9. Filter Top Aquascapers in Gardens
+Has ratings with level 4 or 5, Complexity is Intermediate, Semi-Professional or Professional and Garden's Plants has no easy care
+```
+GET /aquascapers/top
+
+?n=<number of aquascapers to limit>
+```
+### 9. Add a rating to a garden
+```
+PATCH /garden/:id/rating/add
+{
+    newRatingLevel,
+    newRatingComment
+}
+```
+### 10. Delete a rating from a garden
+```
 PATCH /garden/:gid/rating/:rid/delete
+```
+### 11. Edit a rating in a garden
+```
+PUT /garden/:gid/rating/:rid/edit
+{
+    level,
+    comment
+}
+```
+### 12. Advanced Search for Gardens
+```
+GET /gardens
+
+?search=<keyword for generic search>
+&name=<name>
+&desc=<desc>
+&complexity=<complexityLevel>
+&aquascaper=<aquascaper.name>
+```
+
+### 13. Advanced Search for Plants
+```
+GET /plants
+
+?search=<keyword for generic search>
+&name=<name>
+&appearance=<appearance>
+&care=<care>
+&lighting=lighting>
+&smarttag=smartTags>
+```
+### 14. Stats for Gardens' Ratings
+```
+GET /gardens/ratings
+```
+### 15. Number of Gardens by Complexity Level
+```
+GET /gardens/count
+```
+### 16. Names of Aquascapers
+```
+GET /aquascapers/names
+```
+### 17. Number of Gardens by Aquascapers
+```
+GET /aquascapers/count
+```
+### 14. All keywords in Plants' Smart Tags
+```
+GET /plants/smarttags
+```
 
 
 
@@ -124,8 +257,8 @@ https://3000-tan-trout-gu31y5ul.ws-us08.gitpod.io
 
 https://3000-tan-trout-gu31y5ul.ws-us09.gitpod.io 
 
-### Test Cases
-#### **Test 1**: Filter on plants using GET via req.query parameter passing:
+### Test Case for Advanced Search on Plants
+#### Filter on plants using GET via req.query parameter passing:
 ```
 https://3000-tan-trout-gu31y5ul.ws-us08.gitpod.io/plants/top?n=5&care=easy&care=medium&lighting=moderate&likes=-10
 
@@ -136,26 +269,11 @@ GET ../plants/top?n=5&care=easy&care=medium&lighting=moderate&likes=-10
 **Expected Output:** 
 The above will return at most 5 plants documents in JSON format with care = easy/medium and has lighting = moderate/moderate-low/moderate-high and less than 10 likes
 
+## Files Organisation
 
-
-#### **Test 2**: Update a garden using PUT via req.body parameter passing:
-```
-
-```
-**Expected Output:** 
-
-#### **Test 2**: Delete a sub-document rating from garden document using PATCH via req.params parameter passing of ids:
-```
-PATCH /garden/:gid/rating/:rid/delete
-```
-**Expected Output:** 
-
-
-## Deployment
-
-Main Source files:
-1. index.js (all routes here)
-2. wgUtil.js (error handling and array formatting)
+Main Source files with reusable codes:
+1. **index.js** (all routes here)
+2. **wgUtil.js** (error handling and array formatting)
 3. MongoUtil.js (db connection)
 
 Gitpod starting of server and connecting to DB on npm:
@@ -182,5 +300,36 @@ yarn add axios
 yarn add dotenv
 ```
 
-The backend server is hosted at [HEROKU?]
+## Deployment
+Sign up or login to Heroku. In Gitpod bash terminal: 
+```
+heroku login -i
+heroku create <watergardens-be>
+```
+Procfile is created with the following entry:
+```
+web: node index.js
+```
+package.json is added with "start" in "scripts" as below:
+```
+ "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  }
+```
+change port in app.listen in index.js as follows:
+```
+app.listen(process.env.PORT, ()=> {
+    console.log("Server started...")
+})
+```
+push to Heroku:
+```
+git add .
+git commit -m "Deployment to Heroku"
+git push heroku master
+```
+The backend server is hosted at heroku:
+https://hh-tgc12p2-watergardens-be.herokuapp.com
+
 
