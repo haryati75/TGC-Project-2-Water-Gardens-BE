@@ -325,14 +325,17 @@ async function main() {
 
     // ---------------------------------------------------------------------
     // ENDPOINT: Get Top N Plants by Care/Lighting with greater than M likes (done)
+    // Criteria has similar effect with $and
     // ---------------------------------------------------------------------
     app.get('/plants/top', async (req, res) => {
         let topN = !req.query.n ? 3 : parseInt(req.query.n) ; // default to top 3 if blank
-        let floorLikes = !req.query.likes ? 0 : parseInt(req.query.likes); // default to greater than/equal 5 likes
-        
-        // Criteria has similar effect with $and
+        let criteria = {}
+    
+        let floorLikes = !req.query.likes ? 0 : parseInt(req.query.likes); 
         // negative likes means take ratings below the value
-        let criteria = { 'likes' : floorLikes >= 0 ? { '$gte' : floorLikes } : { '$lt' : (-floorLikes) }};
+        if (req.query.likes) {
+            criteria = { 'likes' : floorLikes >= 0 ? { '$gte' : floorLikes } : { '$lt' : (-floorLikes) }};
+        }
 
         let care = makeArray(req.query.care);
         if (req.query.care) {
@@ -374,7 +377,9 @@ async function main() {
         // rating level is nested in ratings objects array
         let floorRating = !req.query.rating ? 0 : parseInt(req.query.rating); 
         
-        criteria['ratings.level'] =  floorRating >= 0 ? { '$gte' : floorRating } : { '$nin' : [3,4,5] } ;
+        if (req.query.rating) {
+            criteria['ratings.level'] =  floorRating >= 0 ? { '$gte' : floorRating } : { '$nin' : [3,4,5] } ;
+        }
 
         if (req.query.level) {
             criteria['complexityLevel'] = req.query.level
