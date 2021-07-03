@@ -177,7 +177,7 @@ async function main() {
         if (req.query.desc) {
             criteria['desc'] = {$regex: req.query.desc, $options: "i"}
         }
-        if (req.query.complexityLevel) {
+        if (req.query.complexity) {
             criteria['complexityLevel'] = {$regex: req.query.complexity, $options: "i"}
         }
 
@@ -381,8 +381,8 @@ async function main() {
             criteria['ratings.level'] =  floorRating >= 0 ? { '$gte' : floorRating } : { '$nin' : [3,4,5] } ;
         }
 
-        if (req.query.level) {
-            criteria['complexityLevel'] = req.query.level
+        if (req.query.complexity) {
+            criteria['complexityLevel'] = req.query.complexity
         }
 
         // use regex: nested aquascaper name with partial search string allowed
@@ -713,7 +713,7 @@ async function main() {
 
 main();
 
-// START SERVER
-app.listen(process.env.PORT, ()=> {
+// START SERVER process.env.PORT
+app.listen(3000, ()=> {
     console.log("Server started...")
 })
